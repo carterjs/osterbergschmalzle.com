@@ -1,0 +1,32 @@
+{{ define "candidates" }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Get to know Matthew Osterberg and Ronald Schmalzle">
+    <title>Candidates</title>
+    {{ template "styles" }}
+</head>
+<body>
+    {{ template "header" }}
+    <main class="container">
+        <h1 class="silk-heading silk-heading--centered">Candidates</h1>
+        <div class="candidates">
+            {{ range .Candidates }} 
+            <article class="candidate">
+                <div id="{{ .Slug }}" class="anchor"></div>
+                <img src="{{ getAssetURL .Image.ID }}?width=600&height=800&format=webp" alt="{{ .Name }}" class="candidate__image" width="300" height="400">
+                <div class="candidate__bio">
+                    <h2>{{ .Name }}</h2>
+                    <p>{{ .Bio }}</p>
+                </div>
+            </article>
+            {{ end }}
+        </div>
+    </main>
+    {{ template "scripts" }}
+</body>
+</html>
+{{ end }}

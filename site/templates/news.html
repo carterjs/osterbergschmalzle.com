@@ -1,0 +1,28 @@
+{{ define "news" }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News & Events</title>
+    {{ template "styles" }}
+</head>
+<body>
+    {{ template "header" }}
+    <main class="container">
+        <h1 class="silk-heading silk-heading--centered">News <span class="silk-heading__sep">&</span><br> Events</h1>
+        <ul class="news preview-list">
+            {{ range .News }}
+            <li>
+                <small class="news-source">{{ .Source }}</small>
+                {{ .Title }}
+                <a href="{{ .Link }}" class="read-more" target="_blank">Read more &rarr;</a>
+            </li>
+            {{ end }}
+        </ul>
+    </main>
+    {{ template "scripts" }}
+</body>
+</html>
+{{ end }}

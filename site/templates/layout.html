@@ -1,0 +1,47 @@
+{{ define "styles" }}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Baskervville:ital@0;1&family=Open+Sans:wght@400;600&display=swap');
+</style>
+<link rel="stylesheet" href="/static/css/styles.css">
+<link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon">
+{{ end }}
+
+{{ define "header" }}
+<header class="header" id="header">
+    <div class="container header__container">
+        <a href="/" class="header__logo">
+            <img src="/static/images/logo_white.svg" alt="Osterberg & Schmalzle for Pike County Commissioners" width="240" height="40">
+        </a>
+        <div class="header__menu">
+            <nav class="header__nav">
+                <ul>
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    <li>
+                        <a href="/candidates">Candidates</a>
+                    </li>
+                    <li>
+                        <a href="/priorities">Priorities</a>
+                    </li>
+                    <li>
+                        <a href="/news">News</a>
+                    </li>
+                </ul>
+            </nav>
+            <ul class="header__social-links">
+                <li>
+                    <a href="https://www.facebook.com/teamosterbergschmalzle/" target="_blank" class="social-link">
+                        <img src="/static/images/facebook.png" alt="Facebook" width="48" height="48" class="social-link__logo">
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <button class="header__menu-toggle" id="menuToggle">Menu</button>
+    </div>
+</header>
+{{ end }}
+
+{{ define "scripts" }}
+<script src="/static/js/script.js"></script>
+{{ end }}

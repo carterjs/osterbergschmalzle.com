@@ -1,0 +1,66 @@
+{{ define "home" }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{ .Configuration.Description }}">
+    <title>{{ .Configuration.Title }}</title>
+    {{ template "styles" }}
+</head>
+<body>
+    {{ template "header" }}
+    <header class="hero">
+        <div class="container hero__container">
+            <h1 class="hero__title">{{ .Configuration.Title }}</h1>
+            <a href="#priorities" class="button button--outline hero__action">
+                Read More
+            </a>
+            <img src="/static/images/down-arrow.svg" alt="" class="hero__arrow">
+            <img src="{{ getAssetURL .Configuration.Image.ID }}?width=1200&height=900&format=webp" alt="{{ .Configuration.Title }}" class="hero__image" width="600" height="450">
+        </div>
+    </header>
+    <main class="container">
+        <section>
+            <div class="candidates-preview">
+                {{ range .Candidates }}
+                <div class="candidate">
+                    <img src="{{ getAssetURL .Image.ID }}?width=600&height=800&format=webp" alt="{{ .Name }}" width="300" height="400" class="candidate__image">
+                    <div class="candidate__bio">
+                        <h2>{{ .Name }}</h2>
+                        <p>{{ .ShortBio }}</p>
+                    </div>
+                    <a class="button candidate__button" href="/candidates#{{ .Slug }}">Meet {{ getFirstName .Name }}</a>
+                </div>
+                {{ end }}
+            </div>
+        </section>
+        <section class="priorities-preview" id="priorities">
+            <h2 class="silk-heading">Accomplishments <span class="silk-heading__sep">&</span><br> Priorities</h2>
+            <ul class="preview-list">
+                {{- range .Priorities -}}
+                <li>
+                    {{ .Title }}
+                    <a href="/priorities#{{ .Slug }}" class="read-more">Read more &rarr;</a>
+                </li>
+                {{- end -}}
+            </ul>
+        </section>
+        <section class="news-preview">
+            <h2 class="silk-heading">News <span class="silk-heading__sep">&</span><br> Events</h2>
+            <ul class="preview-list">
+                {{- range .News -}}
+                <li>
+                    <small class="news-source">{{ .Source }}</small>
+                    {{ .Title }}
+                    <a href="{{ .Link }}" class="read-more" target="_blank">Read more &rarr;</a>
+                </li>
+                {{- end -}}
+            </ul>
+        </section>
+    </main>
+    {{ template "scripts" }}
+</body>
+</html>
+{{ end }}
