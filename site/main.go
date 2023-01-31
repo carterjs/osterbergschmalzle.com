@@ -130,14 +130,14 @@ func main() {
 
 	// Serve static assets
 	fileServer := http.StripPrefix("/static", http.FileServer(http.Dir("./static")))
-	fileServerWithCaching := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "public, max-age=31536000")
-		fileServer.ServeHTTP(w, r)
-	})
+	// fileServerWithCaching := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// 	w.Header().Set("Cache-Control", "public, max-age=31536000")
+	// 	fileServer.ServeHTTP(w, r)
+	// })
 
-	http.Handle("/static/css/", minifier.Middleware(fileServerWithCaching))
-	http.Handle("/static/js/", minifier.Middleware(fileServerWithCaching))
-	http.Handle("/static/", fileServerWithCaching)
+	http.Handle("/static/css/", minifier.Middleware(fileServer))
+	http.Handle("/static/js/", minifier.Middleware(fileServer))
+	http.Handle("/static/", fileServer)
 
 	handlePage[struct {
 		Candidates []Candidate `json:"candidates"`
