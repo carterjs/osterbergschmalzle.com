@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/css"
@@ -28,6 +29,7 @@ type (
 		Title       string `json:"title"`
 		Description string `json:"description"`
 		Image       Image  `json:"image"`
+		Disclaimer  string `json:"disclaimer"`
 	}
 	Candidate struct {
 		Slug     string        `json:"slug"`
@@ -60,7 +62,30 @@ var tmpl = template.New("").Funcs(template.FuncMap{
 	"getFirstName": func(name string) string {
 		return strings.Split(name, " ")[0]
 	},
+	"getDisclaimer": func() string {
+		if time.Since(disclaimerUpdated) > time.Minute*10 {
+			data, _ := query[struct {
+				Configuration `json:"configuration"`
+			}](`
+				{
+					configuration {
+						disclaimer
+					}
+				}
+			`)
+
+			disclaimerUpdated = time.Now()
+			disclaimer = data.Disclaimer
+		}
+
+		return disclaimer
+	},
 })
+
+var (
+	disclaimer        string
+	disclaimerUpdated time.Time
+)
 
 var minifier *minify.M
 
