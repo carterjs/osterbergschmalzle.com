@@ -51,11 +51,7 @@
             <h2 class="silk-heading">News <span class="silk-heading__sep">&</span><br> Events</h2>
             <ul class="preview-list">
                 {{- range .News -}}
-                <li>
-                    <small class="news-source">{{ .Source }}</small>
-                    {{ .Title }}
-                    <a href="{{ .Link }}" class="read-more" target="_blank">Read more &rarr;</a>
-                </li>
+                {{ template "news_list_item" . }}
                 {{- end -}}
             </ul>
         </section>

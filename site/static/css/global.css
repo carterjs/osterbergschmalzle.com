@@ -65,9 +65,15 @@ main {
 }
 
 .container {
+    width: 100%;
+    box-sizing: border-box;
     max-width: 960px;
     margin: 0 auto;
     padding: 0 1rem;
+}
+
+.not-found {
+    margin: 5% auto;
 }
 
 .header {
@@ -328,6 +334,7 @@ main {
 
 .read-more {
     display: block;
+    width: max-content;
     font-weight: 600;
     font-style: italic;
     color: var(--on-background-secondary);
@@ -336,6 +343,7 @@ main {
 }
 
 .candidates-preview {
+    clear: both;
     margin: 15% auto;
 }
 .candidate {
@@ -348,7 +356,6 @@ main {
 }
 .candidates .candidate:last-child {
     margin-bottom: 0;
-    padding-bottom: 0;
 }
 .candidate__bio {
     font-family: var(--font-sans-serif);
@@ -382,6 +389,20 @@ main {
     text-align: center;
     color: var(--on-background-secondary);
     font-size: 0.9rem;
+}
+
+.article {
+    margin: 5% 0;
+}
+
+.article img {
+    display: block;
+    width: 100%;
+    max-width: 600px;
+    margin: 5% auto;
+    box-shadow: var(--shadow);
+    box-sizing: border-box;
+    text-align: center;
 }
 
 @media (min-width: 600px) {

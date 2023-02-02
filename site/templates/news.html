@@ -14,11 +14,7 @@
         <h1 class="silk-heading silk-heading--centered">News <span class="silk-heading__sep">&</span><br> Events</h1>
         <ul class="news preview-list">
             {{ range .News }}
-            <li>
-                <small class="news-source">{{ .Source }}</small>
-                {{ .Title }}
-                <a href="{{ .Link }}" class="read-more" target="_blank">Read more &rarr;</a>
-            </li>
+            {{ template "news_list_item" . }}
             {{ end }}
         </ul>
     </main>
@@ -26,4 +22,18 @@
     {{ template "scripts" }}
 </body>
 </html>
+{{ end }}
+
+{{ define "news_list_item" }}
+    <li>
+        {{ if eq .ContentType "link" }}
+        <small class="news-source">{{ .Source }}</small>
+        {{ end }}
+        {{ .Title }}
+        {{ if eq .ContentType "link" }}
+        <a href="{{ .Link }}" class="read-more" target="_blank">Read more &rarr;</a>
+        {{ else if eq .ContentType "article" }}
+        <a href="/articles/{{ .Article.Slug }}" class="read-more" target="_blank">Read more &rarr;</a>
+        {{ end}}
+    </li>
 {{ end }}
