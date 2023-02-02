@@ -62,7 +62,6 @@ type (
 )
 
 // tmpl contains all parsed templates from the templates folder
-// it does not look inside of folders
 var tmpl = template.New("").Funcs(template.FuncMap{
 	"getAssetURL": func(id string) string {
 		return fmt.Sprintf(directusURL + "/assets/" + id)
