@@ -11,8 +11,9 @@
 </head>
 <body>
     {{ template "header" }}
-    <main class="article">
-        <div class="container">
+    <main class="container">
+        <h1 class="silk-heading silk-heading--centered">{{ .Title }}</h1>
+        <div class="article">
             {{ .Content }}
         </div>
     </main>

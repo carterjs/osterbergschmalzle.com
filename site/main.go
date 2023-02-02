@@ -148,7 +148,12 @@ func main() {
 	http.Handle("/static/", fileServer)
 
 	http.HandleFunc("/articles/", func(w http.ResponseWriter, r *http.Request) {
-		slug := strings.TrimPrefix(r.URL.Path, "/articles/")
+		if r.Method != http.MethodGet {
+			http.Error(w, "unsupported method", http.StatusMethodNotAllowed)
+			return
+		}
+
+		slug := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/articles/"), "/")
 
 		data, err := query[struct {
 			Articles []Article `json:"articles"`
@@ -167,7 +172,13 @@ func main() {
 		`, map[string]any{
 			"slug": slug,
 		})
-		if err != nil || len(data.Articles) == 0 {
+		if err != nil {
+			log.Printf("Internal server error: %v", err)
+			http.Error(w, "failed to fetch data", http.StatusInternalServerError)
+			return
+		}
+
+		if len(data.Articles) == 0 {
 			render404(w)
 			return
 		}

@@ -46,6 +46,7 @@ h1, h2, h3 {
     font-weight: 400;
     margin: 0 0 1rem;
     line-height: 1.2;
+    max-width: 100%;
 }
 h1 {
     font-size: 2.5rem;
@@ -58,6 +59,9 @@ h3 {
 }
 p {
     margin: 0 0 1rem;
+}
+p:last-child {
+    margin: 0;
 }
 main {
     /* margin: 3% 0; */
@@ -379,6 +383,7 @@ main {
     text-align: center;
     box-shadow: none;
     background-color: rgba(255,255,255,0.1);
+    margin-top: 1rem;
 }
 
 .disclaimer {
@@ -392,6 +397,9 @@ main {
 }
 
 .article {
+    background-color: var(--dark);
+    color: var(--on-dark-primary);
+    padding: 1rem;
     margin: 5% 0;
 }
 
