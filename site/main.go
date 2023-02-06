@@ -1,24 +1,18 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"html/template"
-	"io/fs"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
-	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/css"
-	"github.com/tdewolff/minify/v2/html"
-	"github.com/tdewolff/minify/v2/js"
-	"github.com/tdewolff/minify/v2/svg"
+	"github.com/carterjs/webtools/assets"
+	"github.com/carterjs/webtools/cache"
+	"github.com/carterjs/webtools/graphql"
+	"github.com/carterjs/webtools/templates"
 )
 
 var directusURL = os.Getenv("DIRECTUS_URL")
@@ -61,210 +55,132 @@ type (
 	}
 )
 
-// tmpl contains all parsed templates from the templates folder
-var tmpl = template.New("").Funcs(template.FuncMap{
+var assetServer = assets.NewServer("/static", "./static")
+
+var defaultTTL = time.Minute * 10
+var tmpl = template.Must(templates.ParseDir("./templates", template.FuncMap{
 	"getAssetURL": func(id string) string {
 		return fmt.Sprintf(directusURL + "/assets/" + id)
 	},
 	"getFirstName": func(name string) string {
 		return strings.Split(name, " ")[0]
 	},
-	"getDisclaimer": func() string {
-		if time.Since(disclaimerUpdated) > time.Minute*10 {
-			data, _ := query[struct {
-				Configuration `json:"configuration"`
-			}](`
-				{
-					configuration {
-						disclaimer
+	"disclaimer": cache.Func(defaultTTL, func() (string, error) {
+		data, err := query[struct {
+			Configuration `json:"configuration"`
+		}](`
+			{
+				configuration {
+					disclaimer
+				}
+			}
+		`, nil)
+
+		if err != nil {
+			return "", err
+		}
+
+		return data.Disclaimer, nil
+	}),
+	"configuration": cache.Func(defaultTTL, func() (Configuration, error) {
+		data, err := query[struct {
+			Configuration `json:"configuration"`
+		}](`
+			{
+				configuration {
+					title
+					description
+					image {
+						id
 					}
 				}
-			`, nil)
-
-			disclaimerUpdated = time.Now()
-			disclaimer = data.Disclaimer
+			}
+		`, nil)
+		if err != nil {
+			return Configuration{}, err
 		}
 
-		return disclaimer
-	},
-})
-
-var (
-	disclaimer        string
-	disclaimerUpdated time.Time
-)
-
-var minifier *minify.M
-
-func init() {
-	minifier = minify.New()
-	minifier.AddFunc("text/css", css.Minify)
-	minifier.AddFunc("image/svg+xml", svg.Minify)
-	minifier.AddFunc("text/html", html.Minify)
-	minifier.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
-
-	// get and minify templates
-	err := filepath.Walk("./templates", func(path string, info fs.FileInfo, err error) error {
-		if strings.Contains(path, ".html") {
-			b, err := os.ReadFile(path)
-			if err != nil {
-				return err
+		return data.Configuration, nil
+	}),
+	"candidates": cache.Func(defaultTTL, func() ([]Candidate, error) {
+		data, err := query[struct {
+			Candidates []Candidate `json:"candidates"`
+		}](`
+			{
+				candidates {
+					slug
+					name
+					bio
+					short_bio
+					image {
+						id
+					}
+				}
 			}
-
-			mb, err := minifier.Bytes("text/html", b)
-			if err != nil {
-				return err
-			}
-
-			_, err = tmpl.Parse(string(mb))
-			if err != nil {
-				return err
-			}
+		`, nil)
+		if err != nil {
+			return nil, err
 		}
 
-		return nil
-	})
-	if err != nil {
-		log.Fatalf("failed to parse templates: %v", err)
-	}
+		return data.Candidates, nil
+	}),
+	"priorities": cache.Func(defaultTTL, func() ([]Priority, error) {
+		data, err := query[struct {
+			Priorities []Priority `json:"priorities"`
+		}](`
+			{
+				priorities {
+					slug
+					title
+					content
+				}
+			}
+		`, nil)
+		if err != nil {
+			return nil, err
+		}
 
-}
+		return data.Priorities, nil
+	}),
+	"news": cache.Func(defaultTTL, func() ([]News, error) {
+		data, err := query[struct {
+			News []News `json:"news"`
+		}](`
+			{
+				news {
+					content_type
+					article {
+						slug
+					}
+					title
+					link
+					source
+				}
+			}
+		`, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		return data.News, nil
+	}),
+	"getVersionedPath": assetServer.GetVersionedPath,
+}))
 
 func main() {
 	if directusURL == "" {
 		directusURL = "https://admin.osterbergschmalzle.com"
 	}
 
-	// Serve static assets
-	fileServer := http.StripPrefix("/static", http.FileServer(http.Dir("./static")))
-	// fileServerWithCaching := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 	w.Header().Set("Cache-Control", "public, max-age=31536000")
-	// 	fileServer.ServeHTTP(w, r)
-	// })
+	// serve assets
+	http.Handle("/static/", assetServer)
 
-	http.Handle("/static/css/", minifier.Middleware(fileServer))
-	http.Handle("/static/js/", minifier.Middleware(fileServer))
-	http.Handle("/static/", fileServer)
+	handleArticleDetailPage()
 
-	http.HandleFunc("/articles/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "unsupported method", http.StatusMethodNotAllowed)
-			return
-		}
-
-		slug := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/articles/"), "/")
-
-		data, err := query[struct {
-			Articles []Article `json:"articles"`
-		}](`
-			query getArticleBySlug($slug: String) {
-				articles(filter:{
-					slug: {
-						_eq: $slug
-					}
-				}) {
-					title
-					description
-					content
-				}
-			}
-		`, map[string]any{
-			"slug": slug,
-		})
-		if err != nil {
-			log.Printf("Internal server error: %v", err)
-			http.Error(w, "failed to fetch data", http.StatusInternalServerError)
-			return
-		}
-
-		if len(data.Articles) == 0 {
-			render404(w)
-			return
-		}
-
-		renderPage(w, "article", data.Articles[0])
-	})
-
-	handlePage[struct {
-		Candidates []Candidate `json:"candidates"`
-	}]("/candidates", "candidates", `
-		{
-			candidates {
-				slug
-				name
-				bio
-				image {
-					id
-				}
-			}
-		}
-	`)
-
-	handlePage[struct {
-		Priorities []Priority `json:"priorities"`
-	}]("/priorities", "priorities", `
-		{
-			priorities {
-				slug
-				title
-				content
-			}
-		}
-	`)
-
-	handlePage[struct {
-		News []News `json:"news"`
-	}]("/news", "news", `
-		{
-			news {
-				content_type
-				article {
-					slug
-				}
-				title
-				link
-				source
-			}
-		}
-	`)
-
-	handlePage[struct {
-		Configuration Configuration `json:"configuration"`
-		Candidates    []Candidate   `json:"candidates"`
-		Priorities    []Priority    `json:"priorities"`
-		News          []News        `json:"news"`
-	}]("/", "home", `
-		{
-			configuration {
-				title
-				description
-				image {
-					id
-				}
-			}
-			candidates {
-				slug
-				name
-				short_bio
-				image {
-					id
-				}
-			}
-			priorities {
-				slug
-				title
-			}
-			news {
-				content_type
-				article {
-					slug
-				}
-				title
-				link
-				source
-			}
-		}
-	`)
+	handlePage("/candidates", "candidates")
+	handlePage("/priorities", "priorities")
+	handlePage("/news", "news")
+	handlePage("/", "home")
 
 	// Start the server
 	port := os.Getenv("PORT")
@@ -278,30 +194,88 @@ func main() {
 	}
 }
 
+func handleArticleDetailPage() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("recovered from", r)
+		}
+	}()
+
+	type articleGetter func() (*Article, error)
+	articles := map[string]articleGetter{}
+	http.HandleFunc("/articles/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "unsupported method", http.StatusMethodNotAllowed)
+			return
+		}
+
+		slug := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/articles/"), "/")
+
+		var getter articleGetter
+		if existing, ok := articles[slug]; ok {
+			getter = existing
+		} else {
+			getter = cache.Func(defaultTTL, func() (*Article, error) {
+				data, err := query[struct {
+					Articles []Article `json:"articles"`
+				}](`
+					query getArticleBySlug($slug: String) {
+						articles(filter:{
+							slug: {
+								_eq: $slug
+							}
+						}) {
+							title
+							description
+							content
+						}
+					}
+				`, map[string]any{
+					"slug": slug,
+				})
+				if err != nil {
+					return nil, err
+				}
+
+				if len(data.Articles) == 0 {
+					return nil, nil
+				}
+
+				return &data.Articles[0], nil
+			})
+			articles[slug] = getter
+		}
+
+		article, err := getter()
+		if err != nil {
+			render500(w)
+			return
+		}
+
+		if article == nil {
+			render404(w)
+			return
+		}
+
+		renderPage(w, "article", article)
+	})
+}
+
 // handlePage registers a handler to render the template or 404
-func handlePage[T any](path string, templateName string, q string) {
+func handlePage(path string, templateName string) {
 	http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "unsupported method", http.StatusMethodNotAllowed)
 			return
 		}
 
-		var data *T
 		if r.URL.Path != path {
-			// Not an exact match, 404
+			w.WriteHeader(http.StatusNotFound)
 			render404(w)
 			return
-		} else if q != "" {
-			var err error
-			data, err = query[T](q, nil)
-			if err != nil {
-				log.Printf("Internal server error: %v", err)
-				http.Error(w, "failed to fetch data", http.StatusInternalServerError)
-				return
-			}
 		}
 
-		renderPage(w, templateName, data)
+		renderPage(w, templateName, r)
 	})
 }
 
@@ -310,50 +284,20 @@ func render404(w http.ResponseWriter) {
 	renderPage(w, "404", nil)
 }
 
+func render500(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusInternalServerError)
+	renderPage(w, "500", nil)
+}
+
 // renderPage executes the template or returns a 500
 func renderPage(w http.ResponseWriter, templateName string, data any) {
 	err := tmpl.ExecuteTemplate(w, templateName, data)
 	if err != nil {
-		http.Error(w, "failed to parse template", http.StatusInternalServerError)
+		log.Println("failed to parse template:", err)
 	}
 }
 
 // query executes a graphql query against directus
 func query[T any](q string, variables map[string]any) (*T, error) {
-	url := directusURL + "/graphql"
-	bodyBytes, err := json.Marshal(map[string]any{
-		"query":     q,
-		"variables": variables,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal body: %w", err)
-	}
-
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return nil, fmt.Errorf("failed to make request: %w", err)
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		var errBody string
-		_ = json.NewDecoder(resp.Body).Decode(&errBody)
-		return nil, fmt.Errorf("error response from api: %v", resp.Status)
-	}
-
-	var responseBody struct {
-		Data *T `json:"data"`
-	}
-	err = json.NewDecoder(resp.Body).Decode(&responseBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	return responseBody.Data, nil
+	return graphql.Query[T](directusURL+"/graphql", q, variables)
 }

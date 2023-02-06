@@ -14,10 +14,10 @@
     <main class="container">
         <h1 class="silk-heading silk-heading--centered">Candidates</h1>
         <div class="candidates">
-            {{ range .Candidates }} 
+            {{ range candidates }} 
             <article class="candidate">
                 <div id="{{ .Slug }}" class="anchor"></div>
-                <img src="{{ getAssetURL .Image.ID }}?width=600&height=800&format=webp" alt="{{ .Name }}" class="candidate__image" width="300" height="400">
+                <img src="{{ getAssetURL .Image.ID }}?key=portrait" alt="{{ .Name }}" class="candidate__image" width="300" height="400">
                 <div class="candidate__bio">
                     <h2>{{ .Name }}</h2>
                     <p>{{ .Bio }}</p>
