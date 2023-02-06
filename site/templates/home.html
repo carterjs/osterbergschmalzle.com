@@ -5,28 +5,28 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="{{ .Configuration.Description }}">
-    <title>{{ .Configuration.Title }}</title>
+    <meta name="description" content="{{ configuration.Description }}">
+    <title>{{ configuration.Title }}</title>
     {{ template "styles" }}
 </head>
 <body>
     {{ template "header" }}
     <header class="hero">
         <div class="container hero__container">
-            <h1 class="hero__title">{{ .Configuration.Title }}</h1>
+            <h1 class="hero__title">{{ configuration.Title }}</h1>
             <a href="#priorities" class="button button--outline hero__action">
                 Read More
             </a>
             <img src="/static/images/down-arrow.svg" alt="" class="hero__arrow">
-            <img src="{{ getAssetURL .Configuration.Image.ID }}?width=1200&height=900&format=webp" alt="{{ .Configuration.Title }}" class="hero__image" width="600" height="450">
+            <img src="{{ getAssetURL configuration.Image.ID }}?key=hero" alt="{{ configuration.Title }}" class="hero__image" width="600" height="450">
         </div>
     </header>
     <main class="container">
         <section>
             <div class="candidates-preview">
-                {{ range .Candidates }}
+                {{ range candidates }}
                 <div class="candidate">
-                    <img src="{{ getAssetURL .Image.ID }}?width=600&height=800&format=webp" alt="{{ .Name }}" width="300" height="400" class="candidate__image">
+                    <img src="{{ getAssetURL .Image.ID }}?key=portrait" alt="{{ .Name }}" width="300" height="400" class="candidate__image">
                     <div class="candidate__bio">
                         <h2>{{ .Name }}</h2>
                         <p>{{ .ShortBio }}</p>
@@ -39,7 +39,7 @@
         <section class="priorities-preview" id="priorities">
             <h2 class="silk-heading">Accomplishments <span class="silk-heading__sep">&</span><br> Priorities</h2>
             <ul class="preview-list">
-                {{- range .Priorities -}}
+                {{- range priorities -}}
                 <li>
                     {{ .Title }}
                     <a href="/priorities#{{ .Slug }}" class="read-more">Read more &rarr;</a>
@@ -50,7 +50,7 @@
         <section class="news-preview">
             <h2 class="silk-heading">News <span class="silk-heading__sep">&</span><br> Events</h2>
             <ul class="preview-list">
-                {{- range .News -}}
+                {{- range news -}}
                 {{ template "news_list_item" . }}
                 {{- end -}}
             </ul>

@@ -13,7 +13,7 @@
     <main class="container">
         <h1 class="silk-heading silk-heading--centered">News <span class="silk-heading__sep">&</span><br> Events</h1>
         <ul class="news preview-list">
-            {{ range .News }}
+            {{ range news }}
             {{ template "news_list_item" . }}
             {{ end }}
         </ul>
