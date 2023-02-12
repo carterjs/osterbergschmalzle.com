@@ -6,6 +6,7 @@ kill_timeout = 5
 processes = []
 
 [env]
+  DIRECTUS_URL = "osterbergschmalzle-directus.internal"
 
 [experimental]
   allowed_public_ports = []
