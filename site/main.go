@@ -270,7 +270,6 @@ func handlePage(path string, templateName string) {
 		}
 
 		if r.URL.Path != path {
-			w.WriteHeader(http.StatusNotFound)
 			render404(w)
 			return
 		}
